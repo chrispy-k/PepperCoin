@@ -2,11 +2,14 @@ package blockchain
 
 import (
 	"crypto/sha256"
+	"errors"
 	"fmt"
 
 	"github.com/chrispy-k/build_a_coin/db"
 	"github.com/chrispy-k/build_a_coin/utils"
 )
+
+var ErrNotFound = errors.New("block not found")
 
 type Block struct {
 	Data     string `json:"data"`
@@ -17,6 +20,20 @@ type Block struct {
 
 func (b *Block) persist() {
 	db.SaveBlock(b.Hash, utils.ToBytes(b))
+}
+
+func (b *Block) restore(data []byte) {
+	utils.FromBytes(b, data)
+}
+
+func FindBlock(hash string) (*Block, error) {
+	blockBytes := db.Block(hash)
+	if blockBytes == nil {
+		return nil, ErrNotFound
+	}
+	block := &Block{}
+	block.restore(blockBytes)
+	return block, nil
 }
 
 func createBlock(data string, prevHash string, height int) *Block {
