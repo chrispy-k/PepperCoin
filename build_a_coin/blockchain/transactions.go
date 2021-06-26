@@ -11,20 +11,20 @@ const (
 )
 
 type Tx struct {
-	Id        string
-	Timestamp int
-	TxIns     []*TxIn
-	TxOuts    []*TxOut
+	Id        string   `json:"id"`
+	Timestamp int      `json:"timestamp"`
+	TxIns     []*TxIn  `json:"txIns"`
+	TxOuts    []*TxOut `json:"txOuts`
 }
 
 type TxIn struct {
-	Owner  string
-	Amount int
+	Owner  string `json:"owner"`
+	Amount int    `json:"amount"`
 }
 
 type TxOut struct {
-	Owner  string
-	Amount int
+	Owner  string `json:"owner"`
+	Amount int    `json:"amount"`
 }
 
 func (t *Tx) getId() {

@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/chrispy-k/build_a_coin/blockchain"
+	"github.com/chrispy-k/build_a_coin/utils"
 	"github.com/gorilla/mux"
 )
 
@@ -29,6 +30,11 @@ type urlDescription struct {
 
 type errorResponse struct {
 	ErrorMessage string `json:"errorMessage"`
+}
+
+type balanceResponse struct {
+	Address string `json:"addresss"`
+	Balance int    `json:"balance"`
 }
 
 // func (u urlDescription) String() string {
@@ -59,6 +65,11 @@ func documentation(rw http.ResponseWriter, r *http.Request) {
 			Method:      "GET",
 			Description: "Add a block",
 			Payload:     "data:string",
+		},
+		{
+			URL:         url("/balance/{address}"),
+			Method:      "GET",
+			Description: "Get TxOuts for an address",
 		},
 	}
 
@@ -103,6 +114,19 @@ func status(rw http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(rw).Encode(blockchain.Blockchain())
 }
 
+func balance(rw http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	address := vars["address"]
+	total := r.URL.Query().Get("total")
+	switch total {
+	case "true":
+		amount := blockchain.Blockchain().BalanceByAddresss(address)
+		json.NewEncoder(rw).Encode(balanceResponse{Address: address, Balance: amount})
+	default:
+		utils.HandleError(json.NewEncoder(rw).Encode(blockchain.Blockchain().TxOutByAddress(address)))
+	}
+}
+
 func Start(portNum int) {
 	handler := mux.NewRouter()
 	port = fmt.Sprintf(":%d", portNum)
@@ -111,6 +135,7 @@ func Start(portNum int) {
 	handler.HandleFunc("/status", status)
 	handler.HandleFunc("/blocks", blocks).Methods("GET", "POST")
 	handler.HandleFunc("/blocks/{hash:[a-f0-9]+}", blocks).Methods("GET")
+	handler.HandleFunc("/balance/{address}", balance)
 	fmt.Printf("Listening on http://localhost%s\n", port)
 	log.Fatal(http.ListenAndServe(port, handler))
 }
