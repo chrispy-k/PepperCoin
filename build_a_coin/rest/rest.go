@@ -37,6 +37,11 @@ type balanceResponse struct {
 	Balance int    `json:"balance"`
 }
 
+type addTxPayload struct {
+	To     string
+	Amount int
+}
+
 // func (u urlDescription) String() string {
 // 	return ""
 // }
@@ -70,6 +75,11 @@ func documentation(rw http.ResponseWriter, r *http.Request) {
 			URL:         url("/balance/{address}"),
 			Method:      "GET",
 			Description: "Get TxOuts for an address",
+		},
+		{
+			URL:         url("/transactions"),
+			Method:      "POST",
+			Description: "Make a transaction",
 		},
 	}
 
@@ -127,6 +137,20 @@ func balance(rw http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func mempool(rw http.ResponseWriter, r *http.Request) {
+	utils.HandleError(json.NewEncoder(rw).Encode(blockchain.Mempool.Txs))
+}
+
+func transactions(rw http.ResponseWriter, r *http.Request) {
+	var payload addTxPayload
+	utils.HandleError(json.NewDecoder(r.Body).Decode(&payload))
+	err := blockchain.Mempool.AddTx(payload.To, payload.Amount)
+	if err != nil {
+		json.NewEncoder(rw).Encode(errorResponse{"not enough funds"})
+	}
+	rw.WriteHeader(http.StatusCreated)
+}
+
 func Start(portNum int) {
 	handler := mux.NewRouter()
 	port = fmt.Sprintf(":%d", portNum)
@@ -136,6 +160,8 @@ func Start(portNum int) {
 	handler.HandleFunc("/blocks", blocks).Methods("GET", "POST")
 	handler.HandleFunc("/blocks/{hash:[a-f0-9]+}", blocks).Methods("GET")
 	handler.HandleFunc("/balance/{address}", balance)
+	handler.HandleFunc("/mempool", mempool)
+	handler.HandleFunc("/transactions", transactions).Methods("POST")
 	fmt.Printf("Listening on http://localhost%s\n", port)
 	log.Fatal(http.ListenAndServe(port, handler))
 }

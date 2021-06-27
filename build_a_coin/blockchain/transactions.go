@@ -1,6 +1,7 @@
 package blockchain
 
 import (
+	"errors"
 	"time"
 
 	"github.com/chrispy-k/build_a_coin/utils"
@@ -9,6 +10,8 @@ import (
 const (
 	minerReward int = 50
 )
+
+var Mempool *mempool = &mempool{}
 
 type Tx struct {
 	Id        string   `json:"id"`
@@ -25,6 +28,10 @@ type TxIn struct {
 type TxOut struct {
 	Owner  string `json:"owner"`
 	Amount int    `json:"amount"`
+}
+
+type mempool struct {
+	Txs []*Tx
 }
 
 func (t *Tx) getId() {
@@ -46,4 +53,45 @@ func makeCoinbaseTx(address string) *Tx {
 	}
 	tx.getId()
 	return &tx
+}
+
+func makeTx(from, to string, amount int) (*Tx, error) {
+	if Blockchain().BalanceByAddresss(from) < amount {
+		return nil, errors.New("not enough money")
+	}
+	var txIns []*TxIn
+	var txOuts []*TxOut
+	total := 0
+	oldTxOuts := Blockchain().TxOutByAddress(from)
+	for _, txOut := range oldTxOuts {
+		if total > amount {
+			break
+		}
+		txIn := &TxIn{txOut.Owner, txOut.Amount}
+		txIns = append(txIns, txIn)
+		total += txIn.Amount
+	}
+	change := total - amount
+	if change != 0 {
+		changeTxOut := &TxOut{from, change}
+		txOuts = append(txOuts, changeTxOut)
+	}
+	txOut := &TxOut{to, amount}
+	txOuts = append(txOuts, txOut)
+	tx := &Tx{
+		Id:        "",
+		Timestamp: int(time.Now().Unix()),
+		TxIns:     txIns,
+		TxOuts:    txOuts,
+	}
+	return tx, nil
+}
+
+func (m *mempool) AddTx(to string, amount int) error {
+	tx, err := makeTx("chris", to, amount)
+	if err != nil {
+		return err
+	}
+	m.Txs = append(m.Txs, tx)
+	return nil
 }
