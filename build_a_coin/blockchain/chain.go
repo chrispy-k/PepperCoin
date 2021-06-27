@@ -9,7 +9,7 @@ import (
 
 type blockchain struct {
 	NewestHash        string `json:"newestHash"`
-	Height            int    `json:"height`
+	Height            int    `json:"height"`
 	CurrentDifficulty int    `json:"currentDifficulty"`
 }
 
