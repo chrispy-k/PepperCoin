@@ -34,7 +34,7 @@ func home(rw http.ResponseWriter, r *http.Request) {
 	// }
 	// "Must" does what we have done above for us!
 
-	data := homeData{"Home", blockchain.Blockchain().Blocks()}
+	data := homeData{"Home", blockchain.Blocks(blockchain.Blockchain())}
 	templates.ExecuteTemplate(rw, "home", data)
 }
 
